@@ -1,32 +1,32 @@
-import { Body, Get, HttpException, HttpStatus, Injectable, Param, Post } from '@nestjs/common';
+import { Body, Get, HttpException, HttpStatus, Injectable, Param, ParseIntPipe, Post } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { Task } from './schema';
-import { Model } from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Task } from 'src/database/entities/Task';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class TasksService {
-    constructor(@InjectModel(Task.name) private taskModel: Model<Task>) { }
+    constructor(@InjectRepository(Task) private taskRepository: Repository<Task>) { }
 
     @Post()
     async create(@Body() createTaskDto: CreateTaskDto) {
         try {
-            const newTaskModel = new this.taskModel(createTaskDto);
+            const newTask = this.taskRepository.save(createTaskDto);
 
-            return await newTaskModel.save();
+            return await newTask;
         } catch (err) {
             throw new HttpException("Bad request", HttpStatus.BAD_REQUEST);
         }
     }
 
     @Get()
-    async getAll(): Promise<Task[]> {
+    async getAll() {
         try {
-            const models: Task[] = await this.taskModel.find()
+            const tasks = await this.taskRepository.find();
 
-            if (!models.length) throw new HttpException("There is no models", HttpStatus.NOT_FOUND);
+            if (!tasks.length) throw new HttpException("There is no entities", HttpStatus.NOT_FOUND);
 
-            return models;
+            return tasks;
         } catch (err) {
             if (!(err instanceof HttpException)) {
                 throw new HttpException("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -37,13 +37,16 @@ export class TasksService {
     }
 
     @Get("/:id")
-    async getOne(@Param("id") id: string): Promise<Task> {
+    async getOne(@Param("id", ParseIntPipe) id: number) {
         try {
-            const model: Task = await this.taskModel.findById(id);
+            const task: Task = await this.taskRepository.findOne({
+                select: ['title', 'description'],
+                where: { id }
+            });
 
-            if (!model) throw new HttpException(`There is no models with id ${id}`, HttpStatus.NOT_FOUND);
+            if (!task) throw new HttpException(`There is no models with id ${id}`, HttpStatus.NOT_FOUND);
 
-            return model
+            return task
         } catch (err) {
             if (!(err instanceof HttpException)) {
                 throw new HttpException("Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);

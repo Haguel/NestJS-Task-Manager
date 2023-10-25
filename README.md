@@ -6,7 +6,7 @@ Here is my first NestJS app. It provides a platform for users to create/get task
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/TsugaruBurst/NestJS-Task-Manager.git
+   git clone https://github.com/Haguel/NestJS-Task-Manager.git
 
 2. Install dependencies
    ```bash
